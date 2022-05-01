@@ -8,38 +8,80 @@
 
     <TextView
         android:id="@+id/my_textview"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="237dp"
+        android:layout_height="126dp"
         android:backgroundTint="@color/design_default_color_background"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:textColor="@color/design_default_color_secondary_variant"
+        android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.655"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.377"
+        app:layout_constraintStart_toEndOf="@+id/textView3"
+        app:layout_constraintTop_toTopOf="@+id/textView3"
+        app:layout_constraintVertical_bias="0.0"
         tools:text="Hello World!" />
 
-    <Button
-        android:id="@+id/my_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="26dp"
-        android:text="@string/hello_world"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/my_textview"
-        android:onClick="calculate" />
+    <TextView
+        android:id="@+id/Nearest_Migi"
+        android:layout_width="242dp"
+        android:layout_height="94dp"
+        android:backgroundTint="@color/design_default_color_background"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:textColor="@color/design_default_color_secondary_variant"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView4"
+        app:layout_constraintTop_toTopOf="@+id/textView4"
+        app:layout_constraintVertical_bias="0.0"
+        tools:text="Hello World!" />
 
     <TextView
         android:id="@+id/status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="246dp"
+        android:layout_height="52dp"
         android:text="@string/loadingMigis"
         android:textColor="@color/design_default_color_secondary_variant"
+        android:textSize="24sp"
         app:layout_constraintBottom_toTopOf="@+id/my_textview"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="106dp"
+        android:layout_height="52dp"
+        android:text="Status: "
+        android:textColor="@color/design_default_color_secondary_variant"
+        android:textSize="24sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="106dp"
+        android:layout_height="126dp"
+        android:layout_marginTop="32dp"
+        android:text="Location: "
+        android:textColor="@color/design_default_color_secondary_variant"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="106dp"
+        android:layout_height="92dp"
+        android:layout_marginTop="32dp"
+        android:text="Nearest Migi:  "
+        android:textColor="@color/design_default_color_secondary_variant"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView3" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

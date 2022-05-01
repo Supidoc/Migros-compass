@@ -8,10 +8,15 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Address;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,21 +33,23 @@ import android.view.View;
 import android.widget.TextView;
 
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+
 import android.content.Context;
 import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
+
 import android.util.Log;
 
+
 import com.google.android.gms.maps.model.LatLng;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.google.maps.android.heatmaps.WeightedLatLng;
 
 import org.jsfr.json.Collector;
 import org.jsfr.json.GsonParser;
@@ -78,36 +85,40 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     LatLng loc;
     List<migros> migrosArrayList = new ArrayList<migros>();
     Thread t;
-
-
+    boolean LoadedMigis;
+    DecimalFormat df = new DecimalFormat("#.#");
+    SensorManager SensorManager;
+    private final float[] accelerometerReading = new float[3];
+    private final float[] magnetometerReading = new float[3];
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         txtLat = (TextView) findViewById(R.id.my_textview);
+        parseJson();
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_REQUEST_LOCATION);
+            return;
+        }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MainActivity.this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     MY_PERMISSIONS_REQUEST_LOCATION);
             return;
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
-    }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public void calculate(View view) {
-        Status = (TextView) findViewById(R.id.status);
-
-        runthread();
-        Status.setText(R.string.loaded);
-        System.out.println("loaded");
 
     }
 
-    private void runthread() {
+
+
+    public void parseJson() {
 
         t = new Thread(new Runnable() {
             @RequiresApi(api = Build.VERSION_CODES.N)
@@ -116,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                 String jsonFileString = json.getJsonFromAssets(getApplicationContext(), "migros_data_conv.json");
                 JsonSurfer surfer = json.getSurfer();
-
+                LoadedMigis = false;
                 for (int i = 0; i < json.getCount(jsonFileString, surfer, "$.stores[*]"); i++) {
                     //ValueBox<String> id = collector.collectOne("$.stores["+i+"].id", String.class);
                     Collector collector = surfer.collector(jsonFileString);
@@ -125,26 +136,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     ValueBox<String> lon = collector.collectOne("$.stores["+i+"].lon", String.class);
                     ValueBox<String> type = collector.collectOne("$.stores["+i+"].type", String.class);
                     collector.exec();
-                    LatLng MigLoc = new LatLng(Double.parseDouble(lat.get()), Double.parseDouble(lon.get()));
-                    double dist = computeDistanceBetween(loc, MigLoc);
-                    double bear = computeHeading(loc, MigLoc);
-                    migros currentMigros = new migros(i , name.get(), Double.parseDouble(lat.get()), Double.parseDouble(lon.get()), type.get(), dist, bear);
+
+                    migros currentMigros = new migros(i , name.get(), Double.parseDouble(lat.get()), Double.parseDouble(lon.get()), type.get(), 0, 0);
                     migrosArrayList.add(currentMigros);
-                    String finalI = String.valueOf(i);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-
-                            Status.setText(finalI);
-
-                        }
-                    });
 
                 }
+                LoadedMigis = true;
                 migros migi =  Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
-                System.out.println(migi.name);
-                System.out.println(json.getCount(jsonFileString, surfer, "$.stores[*]"));
 
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        Status = (TextView) findViewById(R.id.status);
+                        Status.setText(R.string.loaded);
+
+                    }
+                });
 
             }
         });
@@ -156,14 +164,30 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onLocationChanged(Location location) {
         loc = new LatLng(location.getLatitude(),location.getLongitude());
-
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+        double altitude = location.getAltitude();
+        System.out.println(location.getBearing());
         txtLat = (TextView) findViewById(R.id.my_textview);
-        txtLat.setText("Latitude:" + location.getLatitude() + ", Longitude:" + location.getLongitude());
+        txtLat.setText(loc.toString());
+        if(LoadedMigis) {
+            for (int i = 0; i < migrosArrayList.size(); i++) {
+                migros cur_migros = migrosArrayList.get(i);
+                LatLng MigLoc = new LatLng(cur_migros.lat, cur_migros.lon);
+                cur_migros.dist = computeDistanceBetween(loc, MigLoc);
+                cur_migros.bear = computeHeading(loc, MigLoc);
+                migrosArrayList.set(i, cur_migros);
+            }
+            System.out.println("Update");
+            migros nearest_migi = Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
+            TextView nearest_migi_text = (TextView) findViewById(R.id.Nearest_Migi);
+            nearest_migi_text.setText(nearest_migi.name+ " at " + df.format(nearest_migi.dist/1000) + " Km \nBearing: " + df.format(nearest_migi.bear)+ "°");
 
-
+        }
     }
 
 
@@ -181,6 +205,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     public void onStatusChanged(String provider, int status, Bundle extras) {
 
     }
+
+
 }
 
 
