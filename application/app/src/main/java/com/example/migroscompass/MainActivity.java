@@ -4,14 +4,15 @@ import static com.google.maps.android.SphericalUtil.computeDistanceBetween;
 import static com.google.maps.android.SphericalUtil.computeHeading;
 
 
+import static java.util.Objects.isNull;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import android.hardware.GeomagneticField;
 
 import android.hardware.GeomagneticField;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -19,61 +20,28 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Address;
 import android.os.Build;
 import android.os.Bundle;
-import android.app.Activity;
-import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.TextView;
 
-import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.GregorianCalendar;
-import java.util.Iterator;
 import java.util.List;
-
-import android.content.Context;
-import android.util.Log;
-
-import java.io.IOException;
-import java.io.InputStream;
-
-import android.util.Log;
 
 
 import com.google.android.gms.maps.model.LatLng;
 
 import org.jsfr.json.Collector;
-import org.jsfr.json.GsonParser;
-import org.jsfr.json.JsonPathListener;
 import org.jsfr.json.JsonSurfer;
-import org.jsfr.json.JsonSurferGson;
-import org.jsfr.json.ParsingContext;
 import org.jsfr.json.ValueBox;
-import org.jsfr.json.compiler.JsonPathCompiler;
-import org.jsfr.json.provider.GsonProvider;
-
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 
 
 public class MainActivity extends AppCompatActivity implements LocationListener, SensorEventListener {
@@ -93,8 +61,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     LatLng loc;
     List<migros> migrosArrayList = new ArrayList<migros>();
     Thread t;
-    boolean LoadedMigis;
-    DecimalFormat df = new DecimalFormat("#.#");
+    boolean LoadedMigis = false;
+    static DecimalFormat df = new DecimalFormat("#.#");
     SensorManager sensorManager;
     private final float[] accelerometerReading = new float[3];
     private final float[] magnetometerReading = new float[3];
@@ -111,39 +79,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     ImageView imageViewCompass;
     float bearToNearest;
     float MigrosHeading;
+    float oldHeadingMigros;
+    ImageView imageViewMigros;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_main);
-        txtLat = (TextView) findViewById(R.id.my_textview);
-        parseJson();
+        if(!LoadedMigis) {
+            parseJson();
+        }
     }
 
     public void onStart() {
         super.onStart();
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        TextView nearest_migi_text = (TextView) findViewById(R.id.Nearest_Migi);
+
+        nearest_migi_text.setText("Loading...");
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     MY_PERMISSIONS_REQUEST_LOCATION);
-            return;
+            onStart();
         }
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Sensor sensorGravity = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        Sensor sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        sensorManager.registerListener(this, sensorGravity,
-                SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorMagnetic,
-                SensorManager.SENSOR_DELAY_NORMAL);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_LOCATION);
-            return;
+        else {
+            Sensor sensorGravity = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            Sensor sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            sensorManager.registerListener(this, sensorGravity,
+                    SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(this, sensorMagnetic,
+                    SensorManager.SENSOR_DELAY_NORMAL);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
-
     }
 
     @Override
@@ -152,6 +120,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         // remove listeners
         sensorManager.unregisterListener(this, sensorGravity);
         sensorManager.unregisterListener(this, sensorMagnetic);
+        locationManager.removeUpdates(this);
     }
 
 
@@ -164,7 +133,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
                 String jsonFileString = json.getJsonFromAssets(getApplicationContext(), "migros_data_conv.json");
                 JsonSurfer surfer = json.getSurfer();
-                LoadedMigis = false;
                 for (int i = 0; i < json.getCount(jsonFileString, surfer, "$.stores[*]"); i++) {
                     //ValueBox<String> id = collector.collectOne("$.stores["+i+"].id", String.class);
                     Collector collector = surfer.collector(jsonFileString);
@@ -177,6 +145,26 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     migros currentMigros = new migros(i , name.get(), Double.parseDouble(lat.get()), Double.parseDouble(lon.get()), type.get(), 0, 0);
                     migrosArrayList.add(currentMigros);
 
+                }
+                if(loc!=null){
+                        for (int i = 0; i < migrosArrayList.size(); i++) {
+                            migros cur_migros = migrosArrayList.get(i);
+                            LatLng MigLoc = new LatLng(cur_migros.lat, cur_migros.lon);
+                            cur_migros.dist = computeDistanceBetween(loc, MigLoc);
+                            cur_migros.bear = computeHeading(loc, MigLoc);
+                            migrosArrayList.set(i, cur_migros);
+                        }
+                        migros nearest_migi = Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                TextView nearest_migi_text = (TextView) findViewById(R.id.Nearest_Migi);
+                                TextView nearest_migi_dist_text = (TextView) findViewById(R.id.Nearest_Migi_dist);
+                                nearest_migi_text.setText(nearest_migi.name);
+                                nearest_migi_dist_text.setText(df.format(nearest_migi.dist / 1000) + " Km");
+                            }
+                        });
+                        bearToNearest = (float) nearest_migi.bear;
                 }
                 LoadedMigis = true;
                 migros migi =  Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
@@ -208,8 +196,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
         double altitude = location.getAltitude();
-        txtLat = (TextView) findViewById(R.id.my_textview);
-        txtLat.setText(loc.toString());
         magneticDeclination = new GeomagneticField((float) latitude,(float) longitude,(float) altitude,System.currentTimeMillis()/1000).getDeclination();
         if(LoadedMigis) {
             for (int i = 0; i < migrosArrayList.size(); i++) {
@@ -221,7 +207,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             }
             migros nearest_migi = Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
             TextView nearest_migi_text = (TextView) findViewById(R.id.Nearest_Migi);
-            nearest_migi_text.setText(nearest_migi.name+ " at " + df.format(nearest_migi.dist/1000) + " Km \nBearing: " + df.format(nearest_migi.bear)+ "°");
+            TextView nearest_migi_dist_text = (TextView) findViewById(R.id.Nearest_Migi_dist);
+            nearest_migi_text.setText(nearest_migi.name);
+            nearest_migi_dist_text.setText(df.format(nearest_migi.dist / 1000) + " Km");
             bearToNearest = (float) nearest_migi.bear;
 
         }
@@ -244,6 +232,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public void onSensorChanged(SensorEvent event) {
 
 // get accelerometer data
@@ -267,6 +256,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         float Ax = accelerometerReading[0];
         float Ay = accelerometerReading[1];
         float Az = accelerometerReading[2];
+
 
         float Ex = magnetometerReading[0];
         float Ey = magnetometerReading[1];
@@ -308,20 +298,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return (angle + 360) % 360;
     }
 
-    public static final float ALPHA = 0.15f;
-
+    public static final float ALPHA = 0.1f;
+    static DecimalFormat df2 = new DecimalFormat("#.##");
     public static float[] lowPassFilter(float[] input, float[] output) {
         if (output == null) return input;
 
         for (int i = 0; i < input.length; i++) {
-            output[i] = output[i] + ALPHA * (input[i] - output[i]);
+            output[i] = Float.parseFloat(df2.format(output[i] + ALPHA * (input[i] - output[i])));
         }
         return output;
     }
 
+
     private void updateHeading() {
         //oldHeading required for image rotate animation
-        oldHeading = MigrosHeading;
+        oldHeading = trueHeading;
+        oldHeadingMigros = MigrosHeading;
 
         heading = calculateHeading(accelerometerReading, magnetometerReading);
         heading = convertRadtoDeg(heading);
@@ -333,15 +325,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             }
 
         imageViewCompass = (ImageView) findViewById(R.id.compass_needle);
+        imageViewMigros = (ImageView) findViewById(R.id.compass_needle_migros);
 
         MigrosHeading = trueHeading - bearToNearest;
 
-        RotateAnimation rotateAnimation = new RotateAnimation(-oldHeading, -MigrosHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        rotateAnimation.setDuration(500);
-        rotateAnimation.setFillAfter(true);
+        RotateAnimation rotateAnimationCompass = new RotateAnimation(-oldHeading, -trueHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        rotateAnimationCompass.setDuration(500);
+        rotateAnimationCompass.setFillAfter(true);
         if(imageViewCompass != null) {
 
-            imageViewCompass.startAnimation(rotateAnimation);
+            imageViewCompass.startAnimation(rotateAnimationCompass);
+
+        }
+        RotateAnimation rotateAnimationMigros = new RotateAnimation(-oldHeadingMigros, -MigrosHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        rotateAnimationMigros.setDuration(10);
+        rotateAnimationMigros.setFillAfter(true);
+        if(imageViewMigros != null) {
+
+            imageViewMigros.startAnimation(rotateAnimationMigros);
 
         }
     }
