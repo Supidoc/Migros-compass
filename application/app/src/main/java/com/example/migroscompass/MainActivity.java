@@ -114,15 +114,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_LOCATION);
-            return;
-        }
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
 
         setContentView(R.layout.activity_main);
         txtLat = (TextView) findViewById(R.id.my_textview);
@@ -131,6 +122,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     public void onStart() {
         super.onStart();
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_REQUEST_LOCATION);
+            return;
+        }
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         Sensor sensorGravity = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         Sensor sensorMagnetic = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         sensorManager.registerListener(this, sensorGravity,
@@ -340,8 +339,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         RotateAnimation rotateAnimation = new RotateAnimation(-oldHeading, -MigrosHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         rotateAnimation.setDuration(500);
         rotateAnimation.setFillAfter(true);
-        imageViewCompass.startAnimation(rotateAnimation);
+        if(imageViewCompass != null) {
+
+            imageViewCompass.startAnimation(rotateAnimation);
+
         }
+    }
 
 
 }
