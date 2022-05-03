@@ -59,7 +59,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     String msg = "Android : ";
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     LatLng loc;
-    List<migros> migrosArrayList = new ArrayList<migros>();
     Thread t;
     boolean LoadedMigis = false;
     static DecimalFormat df = new DecimalFormat("#.#");
@@ -81,15 +80,105 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     float MigrosHeading;
     float oldHeadingMigros;
     ImageView imageViewMigros;
+    public List<migros> migrosArrayList = new ArrayList<migros>();
+    boolean proc = false;
+    migros nearest_migi;
+    boolean loadedMigis = false ;
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_main);
-        if(!LoadedMigis) {
-            parseJson();
+        createParseJson();
+        if(savedInstanceState != null){
+            proc = savedInstanceState.getBoolean("proc");
+            if(!loadedMigis) {
+                loadedMigis = savedInstanceState.getBoolean("loadedMigis");
+                System.out.println(loadedMigis);
+            }
         }
+        if (!proc) {
+                parseJson();
+                proc = true;
+        }
+        if(loadedMigis){
+
+            nearest_migi =  Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
+            Status = (TextView) findViewById(R.id.status);
+            Status.setText(R.string.loaded);
+            TextView nearest_migi_text = (TextView) findViewById(R.id.Nearest_Migi);
+            TextView nearest_migi_dist_text = (TextView) findViewById(R.id.Nearest_Migi_dist);
+            nearest_migi_text.setText(nearest_migi.name);
+            nearest_migi_dist_text.setText(df.format(nearest_migi.dist / 1000) + " Km");
+
+        }
+    }
+
+    @Override
+    protected final void onSaveInstanceState(final Bundle outState) {
+        // Save variables.
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("proc", proc);
+        outState.putBoolean("loadedMigis", loadedMigis);
+    }
+
+    private void createParseJson() {
+        t = new Thread(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            @Override
+            public void run() {
+                String jsonFileString = json.getJsonFromAssets(getApplicationContext(), "migros_data_conv.json");
+                JsonSurfer surfer = json.getSurfer();
+                for (int i = 0; i < json.getCount(jsonFileString, surfer, "$.stores[*]"); i++) {
+                    //ValueBox<String> id = collector.collectOne("$.stores["+i+"].id", String.class);
+                    Collector collector = surfer.collector(jsonFileString);
+                    ValueBox<String> name = collector.collectOne("$.stores["+i+"].name", String.class);
+                    ValueBox<String> lat = collector.collectOne("$.stores["+i+"].lat", String.class);
+                    ValueBox<String> lon = collector.collectOne("$.stores["+i+"].lon", String.class);
+                    ValueBox<String> type = collector.collectOne("$.stores["+i+"].type", String.class);
+                    collector.exec();
+                    System.out.println(i);
+                    migros currentMigros = new migros(i , name.get(), Double.parseDouble(lat.get()), Double.parseDouble(lon.get()), type.get(), 0, 0);
+                    migrosArrayList.add(currentMigros);
+
+                }
+                if(loc!=null){
+                    for (int i = 0; i < migrosArrayList.size(); i++) {
+                        migros cur_migros = migrosArrayList.get(i);
+                        LatLng MigLoc = new LatLng(cur_migros.lat, cur_migros.lon);
+                        cur_migros.dist = computeDistanceBetween(loc, MigLoc);
+                        cur_migros.bear = computeHeading(loc, MigLoc);
+                        migrosArrayList.set(i, cur_migros);
+                    }
+                    nearest_migi = Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TextView nearest_migi_text = (TextView) findViewById(R.id.Nearest_Migi);
+                            TextView nearest_migi_dist_text = (TextView) findViewById(R.id.Nearest_Migi_dist);
+                            nearest_migi_text.setText(nearest_migi.name);
+                            nearest_migi_dist_text.setText(df.format(nearest_migi.dist / 1000) + " Km");
+                        }
+                    });
+                    bearToNearest = (float) nearest_migi.bear;
+                }
+                LoadedMigis = true;
+                migros migi =  Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        Status = (TextView) findViewById(R.id.status);
+                        Status.setText(R.string.loaded);
+
+                    }
+                });
+
+            }
+        });
     }
 
     public void onStart() {
@@ -126,61 +215,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     public void parseJson() {
 
-        t = new Thread(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            @Override
-            public void run() {
-
-                String jsonFileString = json.getJsonFromAssets(getApplicationContext(), "migros_data_conv.json");
-                JsonSurfer surfer = json.getSurfer();
-                for (int i = 0; i < json.getCount(jsonFileString, surfer, "$.stores[*]"); i++) {
-                    //ValueBox<String> id = collector.collectOne("$.stores["+i+"].id", String.class);
-                    Collector collector = surfer.collector(jsonFileString);
-                    ValueBox<String> name = collector.collectOne("$.stores["+i+"].name", String.class);
-                    ValueBox<String> lat = collector.collectOne("$.stores["+i+"].lat", String.class);
-                    ValueBox<String> lon = collector.collectOne("$.stores["+i+"].lon", String.class);
-                    ValueBox<String> type = collector.collectOne("$.stores["+i+"].type", String.class);
-                    collector.exec();
-
-                    migros currentMigros = new migros(i , name.get(), Double.parseDouble(lat.get()), Double.parseDouble(lon.get()), type.get(), 0, 0);
-                    migrosArrayList.add(currentMigros);
-
-                }
-                if(loc!=null){
-                        for (int i = 0; i < migrosArrayList.size(); i++) {
-                            migros cur_migros = migrosArrayList.get(i);
-                            LatLng MigLoc = new LatLng(cur_migros.lat, cur_migros.lon);
-                            cur_migros.dist = computeDistanceBetween(loc, MigLoc);
-                            cur_migros.bear = computeHeading(loc, MigLoc);
-                            migrosArrayList.set(i, cur_migros);
-                        }
-                        migros nearest_migi = Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                TextView nearest_migi_text = (TextView) findViewById(R.id.Nearest_Migi);
-                                TextView nearest_migi_dist_text = (TextView) findViewById(R.id.Nearest_Migi_dist);
-                                nearest_migi_text.setText(nearest_migi.name);
-                                nearest_migi_dist_text.setText(df.format(nearest_migi.dist / 1000) + " Km");
-                            }
-                        });
-                        bearToNearest = (float) nearest_migi.bear;
-                }
-                LoadedMigis = true;
-                migros migi =  Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        Status = (TextView) findViewById(R.id.status);
-                        Status.setText(R.string.loaded);
-
-                    }
-                });
-
-            }
-        });
             t.start();
             t.setName("migros");
             t.setPriority(Thread.MAX_PRIORITY);
