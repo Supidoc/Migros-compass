@@ -1,6 +1,8 @@
 package com.example.migroscompass;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -16,9 +18,7 @@ import java.util.Map;
         "lon",
         "type"
 })
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class migros implements Serializable
-{
+public class migrosa implements Serializable {
 
     @JsonProperty("name")
     String name;
@@ -31,8 +31,10 @@ public class migros implements Serializable
     int id;
     double dist;
     double bear;
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
     private final static long serialVersionUID = -5679260257182767596L;
+
+    @JsonIgnore
+    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     @JsonProperty("name")
     public String getName() {
@@ -73,6 +75,8 @@ public class migros implements Serializable
     public void setType(String type) {
         this.type = type;
     }
+
+
     public void migros_set(Integer id, String name, double lat, double lon, String type, double dist, double bear) {
         this.id = id;
         this.name = name;
@@ -82,4 +86,36 @@ public class migros implements Serializable
         this.dist = dist;
         this.bear = bear;
     }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public void setLat(double lat) {
+        this.lat = lat;
+    }
+
+    public void setLon(double lon) {
+        this.lon = lon;
+    }
+
+    public double getDist() {
+        return dist;
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalProperties() {
+        return this.additionalProperties;
+    }
+
+    @JsonAnySetter
+    public void setAdditionalProperty(String name, Object value) {
+        this.additionalProperties.put(name, value);
+    }
 }
+
+
