@@ -31,7 +31,7 @@ public class migros implements Serializable
     int id;
     double dist;
     double bear;
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private final Map<String, Object> additionalProperties = new HashMap<String, Object>();
     private final static long serialVersionUID = -5679260257182767596L;
 
     @JsonProperty("name")

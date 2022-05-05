@@ -34,7 +34,7 @@ public class migrosa implements Serializable {
     private final static long serialVersionUID = -5679260257182767596L;
 
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private final Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     @JsonProperty("name")
     public String getName() {
