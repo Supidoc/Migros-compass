@@ -10,6 +10,8 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.hardware.GeomagneticField;
 
 import android.Manifest;
@@ -475,7 +477,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             }
 
         imageViewCompass = (ImageView) findViewById(R.id.compass_needle);
-        imageViewMigros = (ImageView) findViewById(R.id.compass_needle_migros);
+        imageViewMigros = (ImageView) findViewById(R.id.compass_m_icon);
+        int centerXOnImage=imageViewMigros.getWidth()/2;
+        int centerYOnImage=imageViewCompass.getHeight()/2;
+
+        int centerXOfImageOnScreen=imageViewMigros.getLeft()+centerYOnImage;
+        int centerYOfImageOnScreen=imageViewCompass.getTop()+centerXOnImage;
 
         MigrosHeading = trueHeading - bearToNearest;
         if(MigrosHeading > 360) { //if trueHeading was 362 degrees for example, it should be adjusted to be 2 degrees instead
@@ -488,10 +495,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         rotateAnimationCompass.setFillAfter(true);
         if(imageViewCompass != null) {
 
-            imageViewCompass.startAnimation(rotateAnimationCompass);
+            //imageViewCompass.startAnimation(rotateAnimationCompass);
 
         }
-        RotateAnimation rotateAnimationMigros = new RotateAnimation(-oldHeadingMigros, -MigrosHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        RotateAnimation rotateAnimationMigros = new RotateAnimation(-oldHeading, -trueHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.ABSOLUTE, imageViewCompass.getPivotY());
         rotateAnimationMigros.setDuration(10);
         rotateAnimationMigros.setFillAfter(true);
         if(imageViewMigros != null) {
