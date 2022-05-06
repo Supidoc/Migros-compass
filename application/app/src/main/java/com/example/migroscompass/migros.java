@@ -69,6 +69,10 @@ public class migros implements Serializable
         return type;
     }
 
+    public double getDist() {
+        return dist;
+    }
+
     @JsonProperty("type")
     public void setType(String type) {
         this.type = type;
@@ -82,4 +86,5 @@ public class migros implements Serializable
         this.dist = dist;
         this.bear = bear;
     }
+
 }

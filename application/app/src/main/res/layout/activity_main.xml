@@ -35,6 +35,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/design_default_color_background"
+                android:ellipsize="marquee"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
                 android:textAlignment="center"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
                 android:textColor="@color/migros"
@@ -67,20 +73,24 @@
             android:orientation="vertical">
 
             <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/compass"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
                 <ImageView
                     android:id="@+id/compass_m_icon"
-                    android:layout_width="95dp"
-                    android:layout_height="115dp"
-                    android:scaleX="0.5"
-                    android:scaleY="0.5"
+                    android:layout_width="93dp"
+                    android:layout_height="104dp"
+                    android:adjustViewBounds="false"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:translationY="-20dp"
+                    android:translationZ="20dp"
                     app:layout_constraintBottom_toBottomOf="@+id/compass_needle"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintVertical_bias="0.0"
+                    app:layout_constraintVertical_bias="0.01999998"
                     app:layout_wrapBehaviorInParent="included"
                     app:srcCompat="@drawable/m_icon"
                     tools:visibility="visible" />
@@ -91,10 +101,15 @@
                     android:layout_height="match_parent"
                     android:scaleX="0.6"
                     android:scaleY="0.6"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="1.0"
                     app:srcCompat="@drawable/circle"
-                    tools:layout_editor_absoluteX="-16dp"
-                    tools:layout_editor_absoluteY="88dp"
                     tools:visibility="visible" />
+
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </LinearLayout>
