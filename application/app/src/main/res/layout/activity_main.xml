@@ -31,7 +31,7 @@
                 tools:visibility="visible" />
 
             <TextView
-                android:id="@+id/Nearest_Migi"
+                android:id="@+id/Selected_Migi"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/design_default_color_background"
@@ -51,7 +51,7 @@
                 tools:visibility="visible" />
 
             <TextView
-                android:id="@+id/Nearest_Migi_dist"
+                android:id="@+id/Selected_Migi_dist"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/design_default_color_background"
@@ -63,6 +63,7 @@
                 android:visibility="visible"
                 tools:text="Hello World!"
                 tools:visibility="visible" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -76,6 +77,23 @@
                 android:id="@+id/compass"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
+
+                <Button
+                    android:id="@+id/switch_migros"
+                    android:layout_width="162dp"
+                    android:layout_height="80dp"
+                    android:background="@android:color/transparent"
+                    android:onClick="switch_migros"
+                    android:text="@string/Switch_Migros"
+                    android:textAlignment="center"
+                    android:textColor="@color/migros"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <ImageView
                     android:id="@+id/compass_m_icon"
@@ -99,6 +117,8 @@
                     android:id="@+id/compass_needle"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:clickable="true"
+                    android:contentDescription="@string/migros"
                     android:scaleX="0.6"
                     android:scaleY="0.6"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -132,20 +152,5 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0"
         tools:visibility="visible" />
-
-    <ImageView
-        android:id="@+id/compass_needle_migros"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:rotationX="0"
-        android:scaleX="0.7"
-        android:scaleY="0.7"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@+id/compass_needle"
-        app:layout_constraintEnd_toEndOf="@+id/compass_needle"
-        app:layout_constraintStart_toStartOf="@+id/compass_needle"
-        app:layout_constraintTop_toBottomOf="@+id/Nearest_Migi"
-        app:srcCompat="@drawable/compass_migros"
-        tools:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

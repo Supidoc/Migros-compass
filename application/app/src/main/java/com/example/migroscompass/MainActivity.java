@@ -18,11 +18,11 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -72,8 +72,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     ImageView imageViewMigros;
     public List<migros> migrosArrayList = new ArrayList<>();
     boolean proc = false;
-    migros nearest_migi;
+    migros selected_migi;
     boolean loadedMigis = false;
+    int selected_i = 0;
 
     int mAzimuth;
     boolean haveSensor = false, haveSensor2 = false;
@@ -109,17 +110,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             parseJson();
             proc = true;
         }
-        if (loadedMigis) {
 
-            nearest_migi = Collections.min(migrosArrayList, Comparator.comparing(m -> m.dist));
-            Status = findViewById(R.id.status);
-            Status.setText(R.string.loaded);
-            TextView nearest_migi_text = findViewById(R.id.Nearest_Migi);
-            TextView nearest_migi_dist_text = findViewById(R.id.Nearest_Migi_dist);
-            nearest_migi_text.setText(nearest_migi.name);
-            nearest_migi_dist_text.setText(df.format(nearest_migi.dist / 1000) + " Km");
-
-        }
     }
 
     @Override
@@ -163,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     public void onStart() {
         super.onStart();
-        TextView nearest_migi_text = findViewById(R.id.Nearest_Migi);
+        TextView nearest_migi_text = findViewById(R.id.Selected_Migi);
         nearest_migi_text.setText(R.string.loadingLocation);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -281,12 +272,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 migrosArrayList.set(i, cur_migros);
             }
             Collections.sort(migrosArrayList, new CustomComparator());
-            nearest_migi = migrosArrayList.get(0);
+            selected_migi = migrosArrayList.get(selected_i);
             runOnUiThread(() -> {
-                TextView nearest_migi_text = findViewById(R.id.Nearest_Migi);
-                TextView nearest_migi_dist_text = findViewById(R.id.Nearest_Migi_dist);
-                nearest_migi_text.setText(nearest_migi.name);
-                nearest_migi_dist_text.setText(df.format(nearest_migi.dist / 1000) + " Km");
+                TextView selected_migi_text = findViewById(R.id.Selected_Migi);
+                TextView selected_migi_dist_text = findViewById(R.id.Selected_Migi_dist);
+                selected_migi_text.setText(selected_migi.name);
+                selected_migi_dist_text.setText(df.format(selected_migi.dist / 1000) + " Km");
                 if(!inflates){
 
                     ConstraintLayout container = findViewById(R.id.compass);
@@ -302,12 +293,25 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     inflates = true;
                 }
             });
-            bearToNearest = (float) nearest_migi.bear;
+            bearToNearest = (float) selected_migi.bear;
 
 
         }
 
 
+    }
+
+    public void switch_migros(View view)
+    {
+        if(selected_i>4){
+            selected_i=0;
+        }
+        else{
+
+            selected_i++;
+
+        }
+        nearest_migi();
     }
 
 

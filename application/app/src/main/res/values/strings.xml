@@ -4,4 +4,6 @@
     <string name="loadingMigis">Loading Migis... </string>
     <string name="loadingLocation">Loading Location... </string>
     <string name="loaded">Loaded all Migis! </string>
+    <string name="migros">selected Migros</string>
+    <string name="Switch_Migros">Switch</string>
 </resources>
