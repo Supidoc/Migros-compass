@@ -1,26 +1,20 @@
 package com.example.migroscompass;
 
-import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
-import static com.google.maps.android.SphericalUtil.computeDistanceBetween;
-import static com.google.maps.android.SphericalUtil.computeHeading;
-
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
@@ -34,30 +28,20 @@ import androidx.core.app.ActivityCompat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements LocationListener, SensorEventListener {
+@RequiresApi(api = Build.VERSION_CODES.N)
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
-    protected LocationManager locationManager;
     TextView Status;
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    LatLng loc;
     Thread t;
-    boolean LoadedMigis = false;
+    boolean loadedMigis = false;
     static DecimalFormat df = new DecimalFormat("#.#");
     SensorManager mSensorManager;
 
@@ -70,10 +54,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     float MigrosHeading;
     float oldHeadingMigros;
     ImageView imageViewMigros;
-    public List<migros> migrosArrayList = new ArrayList<>();
     boolean proc = false;
     migros selected_migi;
-    boolean loadedMigis = false;
+
     int selected_i = 0;
 
     int mAzimuth;
@@ -86,8 +69,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     private boolean mLastMagnetometerSet = false;
     private Sensor mRotationV, mAccelerometer, mMagnetometer;
     ImageView[] m_icons = new ImageView[5];
-    boolean click = false;
     boolean inflates = false;
+    location location;
+
 
     public MainActivity() {
     }
@@ -96,16 +80,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @RequiresApi(api = Build.VERSION_CODES.N)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        location = new location(this,MainActivity.this, this);
+        location.newLocationManager(this);
+
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
         setContentView(R.layout.activity_main);
         createParseJson();
-        if (savedInstanceState != null) {
+        /*if (savedInstanceState != null) {
             proc = savedInstanceState.getBoolean("proc");
             if (!loadedMigis) {
                 loadedMigis = savedInstanceState.getBoolean("loadedMigis");
             }
-        }
+        }*/
         if (!proc) {
             parseJson();
             proc = true;
@@ -116,9 +103,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @Override
     protected final void onSaveInstanceState(@NonNull final Bundle outState) {
         // Save variables.
-        super.onSaveInstanceState(outState);
+        /*super.onSaveInstanceState(outState);
         outState.putBoolean("proc", proc);
         outState.putBoolean("loadedMigis", loadedMigis);
+*/
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -131,29 +120,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             try {
 
 
-                migrosArrayList = Arrays.asList(mapper.readValue(jsonFileString, migros[].class));
-
+                compass.migrosArrayList = Arrays.asList(mapper.readValue(jsonFileString, migros[].class));
+                compass.loadedMigis = true;
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
 
-
-           nearest_migi();
-
-
-
             runOnUiThread(() -> {
                 loadedMigis = true;
+
+
                 Status = findViewById(R.id.status);
                 Status.setText(R.string.loaded);
 
             });
 
+            nearest_migi(location.loc,this);
+            Log.i("Num","1");
         });
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public void onStart() {
         super.onStart();
+        location = new location(this,this, this );
+
         TextView nearest_migi_text = findViewById(R.id.Selected_Migi);
         nearest_migi_text.setText(R.string.loadingLocation);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -181,44 +172,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
 
 
-            startLocationUpdates();
+            location.startLocationUpdates(this );
 
         }
 
     }
 
-
-    protected void startLocationUpdates() {
-
-        // Create the location request to start receiving updates
-        LocationRequest mLocationRequest = LocationRequest.create();
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setInterval(20000);
-
-        // Create LocationSettingsRequest object using location request
-        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
-        builder.addLocationRequest(mLocationRequest);
-        LocationSettingsRequest locationSettingsRequest = builder.build();
-
-        // Check whether location settings are satisfied
-        // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
-        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
-        settingsClient.checkLocationSettings(locationSettingsRequest);
-
-        // new Google API SDK v11 uses getFusedLocationProviderClient(this)
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
-                    @RequiresApi(api = Build.VERSION_CODES.N)
-                    @Override
-                    public void onLocationResult(@NonNull LocationResult locationResult) {
-                        // do work here
-                        onLocationChanged(locationResult.getLastLocation());
-                    }
-                },
-                Looper.myLooper());
-    }
 
 
 
@@ -226,7 +185,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @Override
     protected void onStop() {
         super.onStop();
-        locationManager.removeUpdates(this);
+        location.locationManagerRemoveUpdates(this);
+
         if(haveSensor && haveSensor2){
             mSensorManager.unregisterListener(this,mAccelerometer);
             mSensorManager.unregisterListener(this,mMagnetometer);
@@ -239,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     protected void onPause() {
         super.onPause();
-        locationManager.removeUpdates(this);
+        location.locationManagerRemoveUpdates(this);
         if(haveSensor && haveSensor2){
             mSensorManager.unregisterListener(this,mAccelerometer);
             mSensorManager.unregisterListener(this,mMagnetometer);
@@ -260,37 +220,33 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             t.setName("migros");
             t.setPriority(Thread.MAX_PRIORITY);
     }
+    Context mContext = this;
 
-    public void nearest_migi() {
-
-        if (loc != null && loadedMigis) {
-            for (int i = 0; i < migrosArrayList.size(); i++) {
-                migros cur_migros = migrosArrayList.get(i);
-                LatLng MigLoc = new LatLng(cur_migros.lat, cur_migros.lon);
-                cur_migros.dist = computeDistanceBetween(loc, MigLoc);
-                cur_migros.bear = computeHeading(loc, MigLoc);
-                migrosArrayList.set(i, cur_migros);
-            }
-            Collections.sort(migrosArrayList, new CustomComparator());
-            selected_migi = migrosArrayList.get(selected_i);
+    public void nearest_migi(LatLng loc, Activity activity) {
+        if (loc != null && compass.loadedMigis) {
+            compass.createMigrosArrayList(loc);
+            Collections.sort(compass.migrosArrayList, new CustomComparator());
+            selected_migi = compass.migrosArrayList.get(selected_i);
             runOnUiThread(() -> {
-                TextView selected_migi_text = findViewById(R.id.Selected_Migi);
-                TextView selected_migi_dist_text = findViewById(R.id.Selected_Migi_dist);
+
+                TextView selected_migi_text = activity.findViewById(R.id.Selected_Migi);
+                TextView selected_migi_dist_text = activity.findViewById(R.id.Selected_Migi_dist);
                 selected_migi_text.setText(selected_migi.name);
                 selected_migi_dist_text.setText(df.format(selected_migi.dist / 1000) + " Km");
                 if(!inflates){
+                    inflates = true;
+                    ConstraintLayout container = activity.findViewById(R.id.compass);
 
-                    ConstraintLayout container = findViewById(R.id.compass);
-
-                    ImageView img = findViewById(R.id.compass_m_icon);
+                    ImageView img = activity.findViewById(R.id.compass_m_icon);
 
                     for (int i = 0; i < 5; i++) {
-                        View view = LayoutInflater.from(this).inflate(R.layout.imageview_m_icon,container,true);
-                        ImageView img2 = findViewById(R.id.compass_m_icon_inf);
+                        View view = LayoutInflater.from(activity).inflate(R.layout.imageview_m_icon,container,true);
+                        ImageView img2 = activity.findViewById(R.id.compass_m_icon_inf);
                         img2.setId(1000+i);
                         m_icons[i] = img2;
                     }
-                    inflates = true;
+
+                    Log.i("asdf", String.valueOf(m_icons));
                 }
             });
             bearToNearest = (float) selected_migi.bear;
@@ -311,37 +267,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             selected_i++;
 
         }
-        nearest_migi();
+        nearest_migi(location.loc,this );
+        Log.i("Num","2");
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    @Override
-    public void onLocationChanged(Location location) {
-        loc = new LatLng(location.getLatitude(),location.getLongitude());
-        double latitude = location.getLatitude();
-        double longitude = location.getLongitude();
-        double altitude = location.getAltitude();
-        magneticDeclination = new GeomagneticField((float) latitude,(float) longitude,(float) altitude,System.currentTimeMillis()/1000).getDeclination();
-
-        nearest_migi();
-    }
 
 
-    @Override
-    public void onProviderEnabled(@NonNull String provider) {
 
-    }
 
-    @Override
-    public void onProviderDisabled(@NonNull String provider) {
-
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-    }
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -402,22 +336,56 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             imageViewCompass.startAnimation(rotateAnimationCompass);
 
         }
-        RotateAnimation rotateAnimationMigros = new RotateAnimation(-oldHeadingMigros, -MigrosHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.ABSOLUTE, imageViewCompass.getPivotY());
-        rotateAnimationMigros.setDuration(1);
-        rotateAnimationMigros.setFillAfter(true);
-        if(imageViewMigros != null) {
 
-            imageViewMigros.startAnimation(rotateAnimationMigros);
-
-        }
         RotateAnimation rotateAnimationIcons;
         if(inflates){
-            for (int i = 0; i < m_icons.length; i++) {
-                float Cur_bear = (float) migrosArrayList.get(i+1).bear;
-                rotateAnimationIcons = new RotateAnimation(-oldHeading+Cur_bear, -trueHeading+Cur_bear, Animation.RELATIVE_TO_SELF, 0.5f, Animation.ABSOLUTE, imageViewCompass.getPivotY());
+            int o = 0;
+            for (int i = 0;  i < m_icons.length+1; i++) {
+                float Cur_bear = (float) compass.migrosArrayList.get(i).bear;
+                rotateAnimationIcons = new RotateAnimation(-oldHeading + Cur_bear, -trueHeading + Cur_bear, Animation.RELATIVE_TO_SELF, 0.5f, Animation.ABSOLUTE, imageViewCompass.getPivotY());
                 rotateAnimationIcons.setDuration(1);
                 rotateAnimationIcons.setFillAfter(true);
-                m_icons[i].startAnimation(rotateAnimationIcons);
+                if(compass.migrosArrayList.get(i)==selected_migi){
+
+                    if(imageViewMigros != null) {
+
+                        imageViewMigros.startAnimation(rotateAnimationIcons);
+
+                    }
+
+                }else {
+
+                    double distFactor = 0.65;
+                    double alphaFactor = 0.8;
+                    if(compass.migrosArrayList.get(i).dist<800){
+
+                        m_icons[o].setScaleX((float) (1*distFactor));
+                        m_icons[o].setScaleY((float) (1*distFactor));
+                        m_icons[o].setAlpha((float) (1*alphaFactor));
+
+                    } else if(compass.migrosArrayList.get(i).dist<3330){
+
+                        m_icons[o].setScaleX((float) (0.8*distFactor));
+                        m_icons[o].setScaleY((float) (0.8*distFactor));
+                        m_icons[o].setAlpha((float) (0.8*alphaFactor));
+
+                    } else if(compass.migrosArrayList.get(i).dist<8330){
+
+                        m_icons[o].setScaleX((float) (0.6*distFactor));
+                        m_icons[o].setScaleY((float) (0.6*distFactor));
+                        m_icons[o].setAlpha((float) (0.6*alphaFactor));
+
+                    } else{
+
+                        m_icons[o].setScaleX((float) (0.4*distFactor));
+                        m_icons[o].setScaleY((float) (0.4*distFactor));
+                        m_icons[o].setAlpha((float) (0.4*alphaFactor));
+
+                    }
+                    m_icons[o].startAnimation(rotateAnimationIcons);
+
+                    o++;
+                }
         }
         }
     }
