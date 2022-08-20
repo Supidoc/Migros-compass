@@ -1,20 +1,11 @@
 package com.example.migroscompass;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
@@ -24,7 +15,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.app.ActivityCompat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,41 +26,27 @@ import java.util.Collections;
 
 
 @RequiresApi(api = Build.VERSION_CODES.N)
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity{
+
+    int listLength=6;
 
     TextView Status;
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     Thread t;
     boolean loadedMigis = false;
     static DecimalFormat df = new DecimalFormat("#.#");
-    SensorManager mSensorManager;
 
-    float heading;
-    float magneticDeclination = 0;
-    float trueHeading;
-    float oldHeading;
     ImageView imageViewCompass;
-    float bearToNearest;
-    float MigrosHeading;
-    float oldHeadingMigros;
     ImageView imageViewMigros;
     boolean proc = false;
     migros selected_migi;
 
     int selected_i = 0;
 
-    int mAzimuth;
-    boolean haveSensor = false, haveSensor2 = false;
-    float[] rMat = new float[9];
-    float[] orientation = new float[3];
-    private final float[] mLastAccelerometer = new float[3];
-    private final float[] mLastMagnetometer = new float[3];
-    private boolean mLastAccelerometerSet = false;
-    private boolean mLastMagnetometerSet = false;
-    private Sensor mRotationV, mAccelerometer, mMagnetometer;
-    ImageView[] m_icons = new ImageView[5];
+    ImageView[] m_icons = new ImageView[listLength];
     boolean inflates = false;
     location location;
+    sensor sensor;
 
 
     public MainActivity() {
@@ -81,18 +57,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         location = new location(this,MainActivity.this, this);
-        location.newLocationManager(this);
+        location.newManager(this);
 
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        sensor = new sensor(this,MainActivity.this, this);
+        sensor.newManager();
+
 
         setContentView(R.layout.activity_main);
         createParseJson();
-        /*if (savedInstanceState != null) {
+        if (savedInstanceState != null) {
             proc = savedInstanceState.getBoolean("proc");
             if (!loadedMigis) {
                 loadedMigis = savedInstanceState.getBoolean("loadedMigis");
             }
-        }*/
+        }
         if (!proc) {
             parseJson();
             proc = true;
@@ -103,10 +81,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected final void onSaveInstanceState(@NonNull final Bundle outState) {
         // Save variables.
-        /*super.onSaveInstanceState(outState);
+        super.onSaveInstanceState(outState);
         outState.putBoolean("proc", proc);
         outState.putBoolean("loadedMigis", loadedMigis);
-*/
+
 
     }
 
@@ -114,14 +92,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private void createParseJson() {
         t = new Thread(() -> {
 
-            String jsonFileString = json.getJsonFromAssets(getApplicationContext(), "migros_data_conv.json");
+            String jsonFileString = json.getJsonFromAssets(getApplicationContext());
 
             ObjectMapper mapper = new ObjectMapper();
             try {
 
 
-                compass.migrosArrayList = Arrays.asList(mapper.readValue(jsonFileString, migros[].class));
-                compass.loadedMigis = true;
+                migros.arrayList = Arrays.asList(mapper.readValue(jsonFileString, migros[].class));
+                migros.loadedMigis = true;
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
@@ -143,40 +121,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void onStart() {
         super.onStart();
-        location = new location(this,this, this );
+        //location = new location(this,this, this );
 
         TextView nearest_migi_text = findViewById(R.id.Selected_Migi);
         nearest_migi_text.setText(R.string.loadingLocation);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_LOCATION);
-            onStart();
-        } else {
 
-            if (mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) == null) {
-                if ((mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) == null) || (mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) == null)) {
-                    System.out.println("no Sensors");
-                }
-                else {
-                    mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-                    mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-                    haveSensor = mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
-                    haveSensor2 = mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_UI);
-                }
-            }
-            else{
-                mRotationV = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-                haveSensor = mSensorManager.registerListener(this, mRotationV, SensorManager.SENSOR_DELAY_UI);
-            }
+        location.startUpdates(this);
 
+        sensor.register();
 
-
-            location.startLocationUpdates(this );
-
-        }
 
     }
+
+
 
 
 
@@ -185,29 +142,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onStop() {
         super.onStop();
-        location.locationManagerRemoveUpdates(this);
+        location.removeUpdates();
+        sensor.unregister();
 
-        if(haveSensor && haveSensor2){
-            mSensorManager.unregisterListener(this,mAccelerometer);
-            mSensorManager.unregisterListener(this,mMagnetometer);
-        }
-        else{
-            if(haveSensor)
-                mSensorManager.unregisterListener(this,mRotationV);
-        }
     }
 
     protected void onPause() {
         super.onPause();
-        location.locationManagerRemoveUpdates(this);
-        if(haveSensor && haveSensor2){
-            mSensorManager.unregisterListener(this,mAccelerometer);
-            mSensorManager.unregisterListener(this,mMagnetometer);
-        }
-        else{
-            if(haveSensor)
-                mSensorManager.unregisterListener(this,mRotationV);
-        }
+        location.removeUpdates();
+        sensor.unregister();
 
     }
 
@@ -220,13 +163,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             t.setName("migros");
             t.setPriority(Thread.MAX_PRIORITY);
     }
-    Context mContext = this;
+
 
     public void nearest_migi(LatLng loc, Activity activity) {
-        if (loc != null && compass.loadedMigis) {
-            compass.createMigrosArrayList(loc);
-            Collections.sort(compass.migrosArrayList, new CustomComparator());
-            selected_migi = compass.migrosArrayList.get(selected_i);
+        if (loc != null && migros.loadedMigis) {
+            migros.createMigrosArrayList(loc);
+            Collections.sort(migros.arrayList, new CustomComparator());
+            selected_migi = migros.arrayList.get(selected_i);
             runOnUiThread(() -> {
 
                 TextView selected_migi_text = activity.findViewById(R.id.Selected_Migi);
@@ -235,21 +178,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 selected_migi_dist_text.setText(df.format(selected_migi.dist / 1000) + " Km");
                 if(!inflates){
                     inflates = true;
-                    ConstraintLayout container = activity.findViewById(R.id.compass);
+                    ConstraintLayout container = activity.findViewById(R.id.linearLayout);
 
-                    ImageView img = activity.findViewById(R.id.compass_m_icon);
 
-                    for (int i = 0; i < 5; i++) {
-                        View view = LayoutInflater.from(activity).inflate(R.layout.imageview_m_icon,container,true);
+                    for (int i = 0; i < listLength; i++) {
+                        LayoutInflater.from(activity).inflate(R.layout.imageview_m_icon,container,true);
                         ImageView img2 = activity.findViewById(R.id.compass_m_icon_inf);
                         img2.setId(1000+i);
+                        img2.setTranslationY(-60);
                         m_icons[i] = img2;
                     }
 
-                    Log.i("asdf", String.valueOf(m_icons));
                 }
             });
-            bearToNearest = (float) selected_migi.bear;
 
 
         }
@@ -259,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     public void switch_migros(View view)
     {
-        if(selected_i>4){
+        if(selected_i>listLength-2){
             selected_i=0;
         }
         else{
@@ -271,61 +212,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Log.i("Num","2");
     }
 
-
-
-
-
-
-
-
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-            SensorManager.getRotationMatrixFromVector(rMat, event.values);
-            mAzimuth = (int) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360) % 360;
-        }
-
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            System.arraycopy(event.values, 0, mLastAccelerometer, 0, event.values.length);
-            mLastAccelerometerSet = true;
-        } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-            System.arraycopy(event.values, 0, mLastMagnetometer, 0, event.values.length);
-            mLastMagnetometerSet = true;
-        }
-        if (mLastAccelerometerSet && mLastMagnetometerSet) {
-            SensorManager.getRotationMatrix(rMat, null, mLastAccelerometer, mLastMagnetometer);
-            SensorManager.getOrientation(rMat, orientation);
-            mAzimuth = (int) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360) % 360;
-        }
-
-        heading = Math.round(mAzimuth);
-        updateHeading();
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int i) {
-
-    }
-
-
-
-
-    private void updateHeading() {
-        //oldHeading required for image rotate animation
-        oldHeading = trueHeading;
-        oldHeadingMigros = MigrosHeading;
-            trueHeading = heading + magneticDeclination;
-            if(trueHeading > 360) { //if trueHeading was 362 degrees for example, it should be adjusted to be 2 degrees instead
-                trueHeading = trueHeading - 360;
-            }
+    public void animateCompass(float oldHeading, float trueHeading){
 
         imageViewCompass = findViewById(R.id.compass_needle);
         imageViewMigros = findViewById(R.id.compass_m_icon);
-
-        MigrosHeading = trueHeading - bearToNearest;
-        if(MigrosHeading > 360) { //if trueHeading was 362 degrees for example, it should be adjusted to be 2 degrees instead
-            MigrosHeading = MigrosHeading - 360;
-        }
 
 
         RotateAnimation rotateAnimationCompass = new RotateAnimation(-oldHeading, -trueHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
@@ -339,56 +229,56 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         RotateAnimation rotateAnimationIcons;
         if(inflates){
-            int o = 0;
-            for (int i = 0;  i < m_icons.length+1; i++) {
-                float Cur_bear = (float) compass.migrosArrayList.get(i).bear;
+
+            for (int i = 0;  i < m_icons.length; i++) {
+                m_icons[i].setPivotY(m_icons[i].getMeasuredHeight());
+                float Cur_bear = (float) migros.arrayList.get(i).bear;
                 rotateAnimationIcons = new RotateAnimation(-oldHeading + Cur_bear, -trueHeading + Cur_bear, Animation.RELATIVE_TO_SELF, 0.5f, Animation.ABSOLUTE, imageViewCompass.getPivotY());
                 rotateAnimationIcons.setDuration(1);
                 rotateAnimationIcons.setFillAfter(true);
-                if(compass.migrosArrayList.get(i)==selected_migi){
+                if(migros.arrayList.get(i)==selected_migi){
 
-                    if(imageViewMigros != null) {
-
-                        imageViewMigros.startAnimation(rotateAnimationIcons);
-
-                    }
+                    m_icons[i].setScaleX((float) (0.85));
+                    m_icons[i].setScaleY((float) (0.85));
+                    m_icons[i].setAlpha((float) (1));
 
                 }else {
 
-                    double distFactor = 0.65;
+                    double distFactor = 0.75;
                     double alphaFactor = 0.8;
-                    if(compass.migrosArrayList.get(i).dist<800){
+                    if(migros.arrayList.get(i).dist<800){
 
-                        m_icons[o].setScaleX((float) (1*distFactor));
-                        m_icons[o].setScaleY((float) (1*distFactor));
-                        m_icons[o].setAlpha((float) (1*alphaFactor));
+                        m_icons[i].setScaleX((float) (1*distFactor));
+                        m_icons[i].setScaleY((float) (1*distFactor));
+                        m_icons[i].setAlpha((float) (1*alphaFactor));
 
-                    } else if(compass.migrosArrayList.get(i).dist<3330){
+                    } else if(migros.arrayList.get(i).dist<3330){
 
-                        m_icons[o].setScaleX((float) (0.8*distFactor));
-                        m_icons[o].setScaleY((float) (0.8*distFactor));
-                        m_icons[o].setAlpha((float) (0.8*alphaFactor));
+                        m_icons[i].setScaleX((float) (0.8*distFactor));
+                        m_icons[i].setScaleY((float) (0.8*distFactor));
+                        m_icons[i].setAlpha((float) (0.8*alphaFactor));
 
-                    } else if(compass.migrosArrayList.get(i).dist<8330){
+                    } else if(migros.arrayList.get(i).dist<8330){
 
-                        m_icons[o].setScaleX((float) (0.6*distFactor));
-                        m_icons[o].setScaleY((float) (0.6*distFactor));
-                        m_icons[o].setAlpha((float) (0.6*alphaFactor));
+                        m_icons[i].setScaleX((float) (0.6*distFactor));
+                        m_icons[i].setScaleY((float) (0.6*distFactor));
+                        m_icons[i].setAlpha((float) (0.6*alphaFactor));
 
                     } else{
 
-                        m_icons[o].setScaleX((float) (0.4*distFactor));
-                        m_icons[o].setScaleY((float) (0.4*distFactor));
-                        m_icons[o].setAlpha((float) (0.4*alphaFactor));
+                        m_icons[i].setScaleX((float) (0.4*distFactor));
+                        m_icons[i].setScaleY((float) (0.4*distFactor));
+                        m_icons[i].setAlpha((float) (0.4*alphaFactor));
 
                     }
-                    m_icons[o].startAnimation(rotateAnimationIcons);
 
-                    o++;
                 }
+                m_icons[i].startAnimation(rotateAnimationIcons);
+            }
         }
-        }
+
     }
+
 
 
 }

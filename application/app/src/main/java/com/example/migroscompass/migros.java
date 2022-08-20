@@ -1,13 +1,17 @@
 package com.example.migroscompass;
 
+import static com.google.maps.android.SphericalUtil.computeDistanceBetween;
+import static com.google.maps.android.SphericalUtil.computeHeading;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
@@ -28,10 +32,8 @@ public class migros implements Serializable
     Double lon;
     @JsonProperty("type")
     String type;
-    int id;
     double dist;
     double bear;
-    private final Map<String, Object> additionalProperties = new HashMap<String, Object>();
     private final static long serialVersionUID = -5679260257182767596L;
 
     @JsonProperty("name")
@@ -77,14 +79,21 @@ public class migros implements Serializable
     public void setType(String type) {
         this.type = type;
     }
-    public void migros_set(Integer id, String name, double lat, double lon, String type, double dist, double bear) {
-        this.id = id;
-        this.name = name;
-        this.lat = lat;
-        this.lon = lon;
-        this.type = type;
-        this.dist = dist;
-        this.bear = bear;
+
+    static List<migros> arrayList = new ArrayList<>();
+    public static boolean loadedMigis;
+
+    public static void createMigrosArrayList(LatLng cur_loc){
+        for (int i = 0; i < arrayList.size(); i++) {
+            migros cur_migros = arrayList.get(i);
+            LatLng MigLoc = new LatLng(cur_migros.lat, cur_migros.lon);
+            cur_migros.dist = computeDistanceBetween(cur_loc, MigLoc);
+            cur_migros.bear = computeHeading(cur_loc, MigLoc);
+            arrayList.set(i, cur_migros);
+
+        }
+
+
     }
 
 }

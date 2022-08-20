@@ -16,7 +16,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
 
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -33,39 +32,30 @@ public class location extends MainActivity implements LocationListener {
     LatLng loc = null;
     public Activity activity;
     MainActivity mainActivity;
+    protected float magneticDeclination;
 
-    public location(Context mContext,Activity _activity,MainActivity _mainActivity) {
+    public location(Context _mContext,Activity _activity,MainActivity _mainActivity) {
 
-        this.mContext = mContext;
+        mContext = _mContext;
         this.activity = _activity;
         mainActivity = _mainActivity;
 
+    }
+
+    public void newManager(Context mContext) {
+
+        manager = (LocationManager) mContext.getSystemService(LOCATION_SERVICE);
 
     }
 
-    public void newLocationManager(Context mContext) {
-
-        manager = (LocationManager) mContext.getSystemService(mContext.LOCATION_SERVICE);
-
-    }
-
-    public void locationManagerRemoveUpdates(Context mContext) {
+    public void removeUpdates() {
 
         manager.removeUpdates(this);
 
     }
 
-    protected void checkLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_LOCATION);
-            onStart();
-        }
-    }
 
-
-    protected void startLocationUpdates(Context mContext) {
+    protected void startUpdates(Context mContext) {
 
         // Create the location request to start receiving updates
         LocationRequest mLocationRequest = LocationRequest.create();
@@ -83,7 +73,7 @@ public class location extends MainActivity implements LocationListener {
         settingsClient.checkLocationSettings(locationSettingsRequest);
 
         // new Google API SDK v11 uses getFusedLocationProviderClient(this)
-        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (androidx.core.app.ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && androidx.core.app.ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
         getFusedLocationProviderClient(mContext).requestLocationUpdates(mLocationRequest, new LocationCallback() {
