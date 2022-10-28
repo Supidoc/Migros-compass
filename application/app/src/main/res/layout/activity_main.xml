@@ -65,6 +65,7 @@
                     android:layout_width="100dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1" />
+
             </LinearLayout>
 
             <TextView
@@ -107,11 +108,14 @@
                     android:textColor="@color/migros"
                     android:textSize="24sp"
                     android:textStyle="bold"
+                    android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.5"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:visibility="gone"
+                    tools:ignore="UsingOnClickInXml" />
 
                 <ImageView
                     android:id="@+id/compass_needle"
@@ -119,6 +123,7 @@
                     android:layout_height="wrap_content"
                     android:clickable="false"
                     android:contentDescription="@string/migros"
+                    android:scaleType="centerInside"
                     android:scaleX="0.6"
                     android:scaleY="0.6"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -133,10 +138,9 @@
 
                 <ImageView
                     android:id="@+id/compass_m_icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="152dp"
-                    android:layout_marginEnd="152dp"
+                    android:layout_width="98dp"
+                    android:layout_height="68dp"
+                    android:layout_marginBottom="216dp"
                     android:adjustViewBounds="false"
                     android:paddingBottom="30dp"
                     android:scaleType="centerCrop"
@@ -145,9 +149,12 @@
                     android:transformPivotX="46.5dp"
                     android:transformPivotY="104dp"
                     android:visibility="gone"
-                    app:layout_constraintBottom_toTopOf="@+id/compass_needle"
-                    app:layout_constraintEnd_toEndOf="@+id/compass_needle"
-                    app:layout_constraintStart_toStartOf="@+id/compass_needle"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.498"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.27"
                     app:layout_wrapBehaviorInParent="included"
                     app:srcCompat="@drawable/m_icon"
                     tools:visibility="visible" />

@@ -1,9 +1,12 @@
 <resources>
     <string name="app_name">Migros Compass</string>
     <string name="hello_world">Migros Compass</string>
-    <string name="loadingMigis">Loading Migis... </string>
-    <string name="loadingLocation">Loading Location... </string>
+    <string name="loadingMigis">Loading Migis… </string>
+    <string name="loadingLocation">Loading Location… </string>
     <string name="loaded">Loaded all Migis! </string>
     <string name="migros">selected Migros</string>
     <string name="Switch_Migros">Switch</string>
+    <string name="mCompass_logo_description">Migros compass logo</string>
+    <string name="General_Image">Image</string>
+    <string name="general_Image_Description">Image</string>
 </resources>

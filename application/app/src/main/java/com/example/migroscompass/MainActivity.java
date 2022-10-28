@@ -178,15 +178,24 @@ public class MainActivity extends AppCompatActivity{
                 selected_migi_dist_text.setText(df.format(selected_migi.dist / 1000) + " Km");
                 if(!inflates){
                     inflates = true;
-                    ConstraintLayout container = activity.findViewById(R.id.linearLayout);
+                    ConstraintLayout container = activity.findViewById(R.id.compass);
+
 
 
                     for (int i = 0; i < listLength; i++) {
                         LayoutInflater.from(activity).inflate(R.layout.imageview_m_icon,container,true);
-                        ImageView img2 = activity.findViewById(R.id.compass_m_icon_inf);
-                        img2.setId(1000+i);
-                        img2.setTranslationY(-60);
-                        m_icons[i] = img2;
+                        ImageView img = activity.findViewById(R.id.compass_m_icon_inf);
+                        img.setId(1000+i);
+
+                        m_icons[i] = img;
+                        int finalI = i;
+                        img.setOnClickListener(new View.OnClickListener() {
+                            public void onClick(View v) {
+                                switch_migros(finalI);
+                                Log.i("asdf", "Test Switch");
+                            }
+                        });
+
                     }
 
                 }
@@ -198,34 +207,28 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-    public void switch_migros(View view)
+    public void switch_migros(int id)
     {
-        if(selected_i>listLength-2){
-            selected_i=0;
-        }
-        else{
-
-            selected_i++;
-
-        }
+        selected_i = id;
         nearest_migi(location.loc,this );
-        Log.i("Num","2");
     }
 
     public void animateCompass(float oldHeading, float trueHeading){
 
         imageViewCompass = findViewById(R.id.compass_needle);
         imageViewMigros = findViewById(R.id.compass_m_icon);
-
+        View Compass = findViewById(R.id.compass);
 
         RotateAnimation rotateAnimationCompass = new RotateAnimation(-oldHeading, -trueHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         rotateAnimationCompass.setDuration(1);
         rotateAnimationCompass.setFillAfter(true);
-        if(imageViewCompass != null) {
+        if(Compass != null) {
 
-            imageViewCompass.startAnimation(rotateAnimationCompass);
+            Compass.setRotation(-trueHeading);
 
         }
+
+
 
         RotateAnimation rotateAnimationIcons;
         if(inflates){
@@ -234,12 +237,12 @@ public class MainActivity extends AppCompatActivity{
                 m_icons[i].setPivotY(m_icons[i].getMeasuredHeight());
                 float Cur_bear = (float) migros.arrayList.get(i).bear;
                 rotateAnimationIcons = new RotateAnimation(-oldHeading + Cur_bear, -trueHeading + Cur_bear, Animation.RELATIVE_TO_SELF, 0.5f, Animation.ABSOLUTE, imageViewCompass.getPivotY());
-                rotateAnimationIcons.setDuration(1);
+                rotateAnimationIcons.setDuration(1000);
                 rotateAnimationIcons.setFillAfter(true);
                 if(migros.arrayList.get(i)==selected_migi){
 
-                    m_icons[i].setScaleX((float) (0.85));
-                    m_icons[i].setScaleY((float) (0.85));
+                    m_icons[i].setScaleX((float) (0.80));
+                    m_icons[i].setScaleY((float) (0.80));
                     m_icons[i].setAlpha((float) (1));
 
                 }else {
@@ -270,10 +273,13 @@ public class MainActivity extends AppCompatActivity{
                         m_icons[i].setScaleY((float) (0.4*distFactor));
                         m_icons[i].setAlpha((float) (0.4*alphaFactor));
 
+
                     }
 
                 }
-                m_icons[i].startAnimation(rotateAnimationIcons);
+                //m_icons[i].startAnimation(rotateAnimationIcons);
+                m_icons[i].setPivotY(Compass.getPivotY());
+                m_icons[i].setRotation(Cur_bear);
             }
         }
 
