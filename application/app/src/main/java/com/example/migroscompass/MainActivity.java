@@ -6,8 +6,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -37,13 +35,13 @@ public class MainActivity extends AppCompatActivity{
     static DecimalFormat df = new DecimalFormat("#.#");
 
     ImageView imageViewCompass;
-    ImageView imageViewMigros;
     boolean proc = false;
     migros selected_migi;
 
     int selected_i = 0;
 
     ImageView[] m_icons = new ImageView[listLength];
+    ConstraintLayout[] m_icons_container = new ConstraintLayout[listLength];
     boolean inflates = false;
     location location;
     sensor sensor;
@@ -135,10 +133,6 @@ public class MainActivity extends AppCompatActivity{
 
 
 
-
-
-
-
     @Override
     protected void onStop() {
         super.onStop();
@@ -153,7 +147,6 @@ public class MainActivity extends AppCompatActivity{
         sensor.unregister();
 
     }
-
 
 
 
@@ -178,22 +171,27 @@ public class MainActivity extends AppCompatActivity{
                 selected_migi_dist_text.setText(df.format(selected_migi.dist / 1000) + " Km");
                 if(!inflates){
                     inflates = true;
-                    ConstraintLayout container = activity.findViewById(R.id.compass);
+                    ConstraintLayout targetContainer = activity.findViewById(R.id.compass);
 
 
 
                     for (int i = 0; i < listLength; i++) {
-                        LayoutInflater.from(activity).inflate(R.layout.imageview_m_icon,container,true);
+                        LayoutInflater.from(activity).inflate(R.layout.imageview_m_icon,targetContainer,true);
                         ImageView img = activity.findViewById(R.id.compass_m_icon_inf);
+                        ConstraintLayout container = activity.findViewById(R.id.compass_m_icon_container_inf);
                         img.setId(1000+i);
+                        container.setId(2000+i);
 
                         m_icons[i] = img;
+                        m_icons_container[i] = container;
+
+                        activity.findViewById(R.id.compass_m_icon_inf_).setAlpha(0);
+
+
                         int finalI = i;
-                        img.setOnClickListener(new View.OnClickListener() {
-                            public void onClick(View v) {
-                                switch_migros(finalI);
-                                Log.i("asdf", "Test Switch");
-                            }
+                        img.setOnClickListener(v -> {
+                            switch_migros(finalI);
+                            Log.i("asdf", "Test Switch");
                         });
 
                     }
@@ -213,15 +211,11 @@ public class MainActivity extends AppCompatActivity{
         nearest_migi(location.loc,this );
     }
 
-    public void animateCompass(float oldHeading, float trueHeading){
+    public void animateCompass( float trueHeading){
 
         imageViewCompass = findViewById(R.id.compass_needle);
-        imageViewMigros = findViewById(R.id.compass_m_icon);
         View Compass = findViewById(R.id.compass);
 
-        RotateAnimation rotateAnimationCompass = new RotateAnimation(-oldHeading, -trueHeading, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        rotateAnimationCompass.setDuration(1);
-        rotateAnimationCompass.setFillAfter(true);
         if(Compass != null) {
 
             Compass.setRotation(-trueHeading);
@@ -230,15 +224,12 @@ public class MainActivity extends AppCompatActivity{
 
 
 
-        RotateAnimation rotateAnimationIcons;
         if(inflates){
 
             for (int i = 0;  i < m_icons.length; i++) {
-                m_icons[i].setPivotY(m_icons[i].getMeasuredHeight());
+
                 float Cur_bear = (float) migros.arrayList.get(i).bear;
-                rotateAnimationIcons = new RotateAnimation(-oldHeading + Cur_bear, -trueHeading + Cur_bear, Animation.RELATIVE_TO_SELF, 0.5f, Animation.ABSOLUTE, imageViewCompass.getPivotY());
-                rotateAnimationIcons.setDuration(1000);
-                rotateAnimationIcons.setFillAfter(true);
+
                 if(migros.arrayList.get(i)==selected_migi){
 
                     m_icons[i].setScaleX((float) (0.80));
@@ -277,9 +268,14 @@ public class MainActivity extends AppCompatActivity{
                     }
 
                 }
-                //m_icons[i].startAnimation(rotateAnimationIcons);
-                m_icons[i].setPivotY(Compass.getPivotY());
-                m_icons[i].setRotation(Cur_bear);
+
+
+                m_icons_container[i].setRotation(Cur_bear);
+                m_icons_container[i].setPivotX(findViewById(R.id.compass).getPivotX()-findViewById(R.id.compass).getWidth()/2+m_icons_container[i].getWidth()/2);
+                m_icons_container[i].setPivotY(findViewById(R.id.compass).getPivotY());
+                m_icons[i].setPivotX(m_icons[i].getWidth()/2);
+                m_icons[i].setPivotY(m_icons[i].getHeight());
+
             }
         }
 

@@ -130,7 +130,7 @@ public class sensor extends MainActivity implements SensorEventListener {
             trueHeading = trueHeading - 360;
         }
 
-        mainActivity.animateCompass(oldHeading,trueHeading);
+        mainActivity.animateCompass(trueHeading);
 
     }
 

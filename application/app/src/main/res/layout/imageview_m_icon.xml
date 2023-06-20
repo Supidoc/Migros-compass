@@ -6,26 +6,33 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
-
-    <ImageView
-        android:id="@+id/compass_m_icon_inf"
-        android:layout_width="93dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/compass_m_icon_container_inf"
+        android:layout_width="wrap_content"
         android:layout_height="104dp"
-        android:alpha="0.7"
-        android:scaleX="1"
-        android:scaleY="1"
-        android:transformPivotX="46.5dp"
-        android:transformPivotY="104dp"
-        app:layout_constraintBottom_toBottomOf="@+id/compass_needle"
+        app:layout_constraintBottom_toTopOf="@+id/compass_needle"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.496"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"
-        app:layout_wrapBehaviorInParent="included"
-        app:srcCompat="@drawable/m_icon"
-        tools:visibility="visible"
-        android:contentDescription="TODO" />
+        app:layout_constraintVertical_bias="0.0">
+
+
+        <ImageView
+            android:id="@+id/compass_m_icon_inf"
+            android:layout_width="93dp"
+            android:layout_height="104dp"
+            android:alpha="0.7"
+            android:contentDescription="TODO"
+            android:scaleX="1"
+            android:scaleY="1"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.496"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_wrapBehaviorInParent="included"
+            app:srcCompat="@drawable/m_icon"
+            tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </merge>
